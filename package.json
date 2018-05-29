@@ -1,0 +1,11 @@
+{
+  "name": "tender",
+  "version": "0.0.1",
+  "main": "main.js",
+  "scripts": {
+    "start": "node_modules/.bin/electron $NODE_DEBUG_OPTION ."
+  },
+  "devDependencies": {
+    "electron": "2.0.2"
+  }
+}
