@@ -2,8 +2,6 @@ import $import from "./$import.js";
 import "./test.css";
 import compiler from "//vue-template-compiler";
 
-const compiled = compiler.compileToFunctions(`<div><button-counter></button-counter><test-el></test-el></div>`);
-
 import Vue from "//vue";
 import api from "//vue-hot-reload-api";
 
@@ -19,7 +17,7 @@ Vue.component(
 new Vue({
     el: '#app',
 
-    ...compiled
+    ...compiler.compileToFunctions(`<div><button-counter></button-counter><test-el></test-el></div>`)
 });
 
 document.querySelector("button").addEventListener("click", (e) => {
