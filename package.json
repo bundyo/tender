@@ -5,8 +5,12 @@
   "scripts": {
     "start": "node_modules/.bin/electron $NODE_DEBUG_OPTION ."
   },
+  "dependencies": {
+    "vue": "^2.5.16"
+  },
   "devDependencies": {
-    "electron": "2.0.2",
-    "chokidar": "2.0.3"
+    "electron": "^2.0.2",
+    "chokidar": "^2.0.3",
+    "vue-hot-reload-api": "^2.3.0"
   }
 }

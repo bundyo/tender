@@ -2,6 +2,8 @@ import $import from "./$import.js";
 import test from "./test.js";
 import "./test.css";
 
+import Vue from "vue";
+
 document.body.style.background = test.isTest ? "green" : "red";
 
 document.querySelector("button").addEventListener("click", (e) => {
