@@ -9,6 +9,13 @@ try {
 
 const requests = {};
 
+const transforms = {
+    "vue-hot-reload-api": {},
+    "vue-template-compiler": {
+        entry: "build.js"
+    }
+};
+
 protocol.registerStandardSchemes(["file"]);
 
 function updateCSS(filePath, text) {
@@ -55,12 +62,27 @@ module.exports = {
 
         protocol.unregisterProtocol("file");
         protocol.registerBufferProtocol("file", (request, callback) => {
-            const url = request.url;
-            const filePath = request.url.replace(/^file:\/\//, "");
-            const buffer = fs.readFileSync(filePath);
+            let filePath = request.url.replace(/^file:\/\//, ""),
+                moduleName = filePath.slice(0, -1),
+                transform = transforms[moduleName],
+                data, module;
 
-            if (!url.endsWith(".js") && request.headers.Accept === "*/*") {
-                const text = buffer.toString();
+            const isModule = filePath.endsWith("/") && !filePath.startsWith("/");
+
+            if (isModule) {
+                let pkg = fs.readFileSync(path.resolve("node_modules", filePath, "package.json"), "utf8");
+
+                pkg = pkg && JSON.parse(pkg);
+
+                module = pkg.module ? pkg.module : transform && transform.entry ? transform.entry : pkg.main;
+
+                filePath = path.resolve("node_modules", filePath, module);
+            }
+
+            data = fs.readFileSync(filePath);
+
+            if (!filePath.endsWith(".js") && request.headers.Accept === "*/*") {
+                const text = data.toString();
 
                 callback({
                     mimeType: "application/javascript",
@@ -72,7 +94,23 @@ module.exports = {
                 return;
             }
 
-            callback(buffer);
+            if (filePath.endsWith(".js")) {
+                if (transform) {
+                    const text = `let exports = {}; ${data.toString()}\nexport default exports;`;
+
+                    callback({
+                        mimeType: "application/javascript",
+                        data: Buffer.from(text)
+                    });
+                } else {
+                    callback({
+                        mimeType: "application/javascript",
+                        data
+                    });
+                }
+            } else {
+                callback(data);
+            }
         });
 
         let watcher;

@@ -1,18 +1,28 @@
 import $import from "./$import.js";
-import test from "./test.js";
 import "./test.css";
+import compiler from "//vue-template-compiler";
 
-import Vue from "vue";
+const compiled = compiler.compileToFunctions(`<div><button-counter></button-counter><test-el></test-el></div>`);
 
-document.body.style.background = test.isTest ? "green" : "red";
+import Vue from "//vue";
+import api from "//vue-hot-reload-api";
+
+api.install(Vue);
+
+import "./test.js";
+
+Vue.component(
+  "test-el",
+  () => $import("./test2.js")
+);
+
+new Vue({
+    el: '#app',
+
+    ...compiled
+});
 
 document.querySelector("button").addEventListener("click", (e) => {
     e.preventDefault();
     $import("./test2.css");
-
-    $import("./test2.js")
-        .then((module) => {
-            console.log(module.default);
-            console.log(module.isTest2);
-        });
 });

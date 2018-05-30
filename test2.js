@@ -1,7 +1,13 @@
-const test2 = {
-    isTest2: true
+import compiler from "//vue-template-compiler";
+
+import template from "./test.html"
+
+export default {
+    data: function () {
+        return {
+            count: 0
+        }
+    },
+
+    ...compiler.compileToFunctions(template)
 };
-
-export const isTest2 = test2.isTest2;
-
-export default test2;

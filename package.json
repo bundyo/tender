@@ -6,7 +6,8 @@
     "start": "node_modules/.bin/electron $NODE_DEBUG_OPTION ."
   },
   "dependencies": {
-    "vue": "^2.5.16"
+    "vue": "^2.5.16",
+    "vue-template-compiler": "^2.5.16"
   },
   "devDependencies": {
     "electron": "^2.0.2",
