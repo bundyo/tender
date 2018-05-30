@@ -12,7 +12,7 @@ const requests = {};
 protocol.registerStandardSchemes(["file"]);
 
 function updateCSS(filePath, text) {
-    const webContent = webContents.fromId(requests[filePath].id);
+    const webContent = requests[filePath] && webContents.fromId(requests[filePath].id);
     const selector = `'style[url="${filePath}"]'`;
 
     if (webContent && filePath.endsWith(".css")) {
@@ -83,15 +83,17 @@ module.exports = {
             }).on("ready", () => {
                 watcher.on("all", (event, filePath, stat) => {
                     filePath = path.resolve(filePath);
-                    const text = fs.readFileSync(filePath).toString();
+                    if (requests[filePath]) {
+                        const text = fs.readFileSync(filePath).toString();
 
-                    switch (event) {
-                        case "add":
-                            break;
-                        case "change":
-                            updateCSS(filePath, text);
-                            break;
-                        case "unlink":
+                        switch (event) {
+                            case "add":
+                                break;
+                            case "change":
+                                updateCSS(filePath, text);
+                                break;
+                            case "unlink":
+                        }
                     }
                 });
             });
