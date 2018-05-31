@@ -2,6 +2,7 @@ module.exports = {
     install() {
         return `
             const a = document.createElement("a");
+            const components = {};
             
             let counter = 0;
             
@@ -48,18 +49,33 @@ module.exports = {
             $import("//Vue").then((Vue) => {
                 Vue = Vue.default;
 
+                const __component__ = Vue.component;
+
+                Vue.component = function () {
+                    if (window.__vue_hot_reload_api__) {
+                        __vue_hot_reload_api__.createRecord(arguments[0], arguments[1]);
+                    } else if (arguments[1]) {
+                        components[arguments[0]] = arguments[1];
+                    }
+
+                    __component__.call(this, ...arguments);
+                }        
+
                 $import("//vue-hot-reload-api").then((api) => {
                     api = api.default;
                 
                     api.install(Vue);
                     
-                    window.__api__ = api;
-                    
-                    const __component__ = Vue.component;
-                    
-                    Vue.component = function () {
-                        __component__.call(this, ...arguments);
-                    }        
+                    window.__vue_hot_reload_api__ = api;
+
+                    if (Object.keys(components).length > 0) {
+                        Object.entries(components).forEach((entry) => {
+                            if (typeof entry[1] === 'function') {
+                            } else {
+                                api.createRecord(entry[0], entry[1]);
+                            }
+                        });
+                    }
                 });
             });
         `;
