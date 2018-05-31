@@ -8,7 +8,14 @@ app.on("window-all-closed", () => {
 });
 
 app.on("ready", () => {
-    tender.init();
+    tender.init({
+        alias: {
+            vue: "dist/vue.esm.js"
+        },
+        plugins: {
+            vue: "./vue-hot-reload.js"
+        }
+    });
 
     const win = new BrowserWindow();
 

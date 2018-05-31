@@ -1,6 +1,4 @@
-import compiler from "//vue-template-compiler";
-
-import template from "./test.html"
+import template from "./test2.html"
 
 export default {
     data: function () {
@@ -9,5 +7,5 @@ export default {
         }
     },
 
-    ...compiler.compileToFunctions(template)
+    template
 };

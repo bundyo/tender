@@ -1,11 +1,7 @@
 import $import from "./$import.js";
 import "./test.css";
-import compiler from "//vue-template-compiler";
 
 import Vue from "//vue";
-import api from "//vue-hot-reload-api";
-
-api.install(Vue);
 
 import "./test.js";
 
@@ -17,7 +13,7 @@ Vue.component(
 new Vue({
     el: '#app',
 
-    ...compiler.compileToFunctions(`<div><button-counter></button-counter><test-el></test-el></div>`)
+    template: `<div><button-counter></button-counter><test-el></test-el></div>`
 });
 
 document.querySelector("button").addEventListener("click", (e) => {

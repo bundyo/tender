@@ -8,7 +8,7 @@ try {
 } catch(e) {}
 
 const requests = {};
-
+const plugins = {};
 const transforms = {
     "vue-hot-reload-api": {},
     "vue-template-compiler": {
@@ -18,13 +18,20 @@ const transforms = {
 
 protocol.registerStandardSchemes(["file"]);
 
-function updateCSS(filePath, text) {
-    const webContent = requests[filePath] && webContents.fromId(requests[filePath].id);
-    const selector = `'style[url="${filePath}"]'`;
+function executeInWebContent(id, script) {
+    if (!id || !script) {
+        return;
+    }
 
-    if (webContent && filePath.endsWith(".css")) {
-        webContent.executeJavaScript(`
-            styleTag = document.documentElement.querySelector(${selector});
+    const webContent = webContents.fromId(id);
+
+    webContent && webContent.executeJavaScript(script);
+}
+
+function updateCSS(filePath, text) {
+    if (filePath.endsWith(".css")) {
+        executeInWebContent(requests[filePath] && requests[filePath].id, `
+            styleTag = document.documentElement.querySelector(${`'style[url="${filePath}"]'`});
             styleElement = document.createElement("style");
             
             styleElement.url = \`${filePath}\`;
@@ -40,9 +47,21 @@ function updateCSS(filePath, text) {
 }
 
 module.exports = {
-    init(initialPath = ".") {
+    init(options = {}) {
+        options = Object.assign({
+            path: ".",
+            alias: {},
+            plugins: {}
+        }, options);
+
+        if (options.plugins) {
+            Object.entries(options.plugins).forEach((entry) => {
+                plugins[entry[0]] = require(entry[1]);
+            });
+        }
+
         session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-            const filePath = details.url.replace(/^file:\/\//, "");
+            const filePath = details.url.replace(/^file:\/\//, "").replace(/\/$/, "");
             const request = requests[filePath];
             const id = details.webContentsId;
 
@@ -63,16 +82,23 @@ module.exports = {
         protocol.unregisterProtocol("file");
         protocol.registerBufferProtocol("file", (request, callback) => {
             let filePath = request.url.replace(/^file:\/\//, ""),
-                moduleName = filePath.slice(0, -1),
+                moduleName = filePath.replace(/\/$/, ""),
                 transform = transforms[moduleName],
+                alias = options.alias[moduleName],
                 data, module;
 
             const isModule = filePath.endsWith("/") && !filePath.startsWith("/");
 
             if (isModule) {
-                let pkg = fs.readFileSync(path.resolve("node_modules", filePath, "package.json"), "utf8");
+                let pkg;
 
-                pkg = pkg && JSON.parse(pkg);
+                if (alias) {
+                    pkg = { module: alias };
+                } else {
+                    pkg = fs.readFileSync(path.resolve("node_modules", filePath, "package.json"), "utf8");
+
+                    pkg = pkg && JSON.parse(pkg);
+                }
 
                 module = pkg.module ? pkg.module : transform && transform.entry ? transform.entry : pkg.main;
 
@@ -89,7 +115,7 @@ module.exports = {
                     data: Buffer.from(`export default \`${text}\`;`)
                 });
 
-                updateCSS(filePath, text);
+                updateCSS(moduleName, text);
 
                 return;
             }
@@ -108,6 +134,10 @@ module.exports = {
                         data
                     });
                 }
+
+                if (plugins[moduleName]) {
+                    executeInWebContent(requests[moduleName] && requests[moduleName].id, plugins[moduleName].install());
+                }
             } else {
                 callback(data);
             }
@@ -116,11 +146,11 @@ module.exports = {
         let watcher;
 
         if (chokidar) {
-            watcher = chokidar.watch(initialPath, {
+            watcher = chokidar.watch(options.path, {
                 ignored: /(^|[\/\\])\..|.*node_modules.*/
             }).on("ready", () => {
                 watcher.on("all", (event, filePath, stat) => {
-                    filePath = path.resolve(filePath);
+                    filePath = path.resolve(filePath).replace(/\/$/, "");
                     if (requests[filePath]) {
                         const text = fs.readFileSync(filePath).toString();
 
