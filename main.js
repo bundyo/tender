@@ -19,5 +19,7 @@ app.on("ready", () => {
 
     const win = new BrowserWindow();
 
+    win.openDevTools();
+
     win.loadFile("index.html");
 });

@@ -7,6 +7,8 @@ try {
     chokidar = require("chokidar");
 } catch(e) {}
 
+let navigating = false;
+
 const requests = {};
 const plugins = {};
 const transforms = {
@@ -53,12 +55,6 @@ module.exports = {
             alias: {},
             plugins: {}
         }, options);
-
-        if (options.plugins) {
-            Object.entries(options.plugins).forEach((entry) => {
-                plugins[entry[0]] = require(entry[1]);
-            });
-        }
 
         session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
             const filePath = details.url.replace(/^file:\/\//, "").replace(/\/$/, "");
@@ -134,14 +130,28 @@ module.exports = {
                         data
                     });
                 }
-
-                if (plugins[moduleName]) {
-                    executeInWebContent(requests[moduleName] && requests[moduleName].id, plugins[moduleName].install());
-                }
             } else {
+                if (navigating) {
+                    data = Buffer.from(data.toString().replace(/(<head>)/im, `$1${plugins["vue"].install()}`));
+
+                    navigating = false;
+                }
+
                 callback(data);
             }
         });
+
+        if (options.plugins) {
+            Object.entries(options.plugins).forEach((entry) => {
+                plugins[entry[0]] = require(entry[1]);
+
+                app.on("web-contents-created", (e, webContents) => {
+                    webContents.on("did-get-response-details", () => {
+                        navigating = true;
+                    });
+                });
+            });
+        }
 
         let watcher;
 
